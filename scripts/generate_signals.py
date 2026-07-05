@@ -142,7 +142,10 @@ def main():
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "sectors": [],
     }
-    stats = {"attempted": 0, "succeeded": 0, "drift_errors": 0, "drift_samples": []}
+    stats = {
+        "attempted": 0, "succeeded": 0, "drift_errors": 0, "drift_samples": [],
+        "sectors_total": len(SECTORS), "sectors_with_data": 0, "sector_errors": [],
+    }
 
     for sector_name in SECTORS:
         print(f"Processing {sector_name} ...")
@@ -154,8 +157,11 @@ def main():
             print(f"  ! SCHEMA DRIFT fetching constituents: {e}")
             continue
         except Exception as e:  # noqa: BLE001
+            stats["sector_errors"].append(f"{sector_name}: {e}")
             print(f"  ! could not fetch constituents: {e}")
             continue
+
+        stats["sectors_with_data"] += 1
 
         symbols = [c["symbol"] for c in constituents if c.get("symbol") and c["symbol"] != sector_name]
 
@@ -209,24 +215,53 @@ def check_health(stats):
     flag file the workflow checks to open a GitHub Issue.
     """
     success_rate = stats["succeeded"] / stats["attempted"] if stats["attempted"] else 0
-    is_degraded = stats["drift_errors"] > 0 or (stats["attempted"] > 0 and success_rate < 0.5)
+    sector_success_rate = (
+        stats["sectors_with_data"] / stats["sectors_total"] if stats["sectors_total"] else 0
+    )
+
+    # Degraded if: schema drift seen, OR stock-level success rate is bad,
+    # OR — the case that was previously falling through the cracks —
+    # most/all sectors failed before we even got to listing stocks
+    # (e.g. every request blocked/rejected), which left `attempted` at 0
+    # and looked like "nothing to report."
+    is_degraded = (
+        stats["drift_errors"] > 0
+        or (stats["attempted"] > 0 and success_rate < 0.5)
+        or sector_success_rate < 0.5
+    )
 
     flag_path = Path(__file__).resolve().parent.parent / "diagnostics" / "NEEDS_ATTENTION.json"
     if is_degraded:
-        summary = {
-            "flagged_at": dt.datetime.now(dt.timezone.utc).isoformat(),
-            "attempted": stats["attempted"],
-            "succeeded": stats["succeeded"],
-            "success_rate_pct": round(success_rate * 100, 1),
-            "drift_errors": stats["drift_errors"],
-            "drift_samples": stats["drift_samples"][:5],  # keep it short for the issue body
-            "likely_cause": (
+        if sector_success_rate < 0.5:
+            likely_cause = (
+                f"Only {stats['sectors_with_data']}/{stats['sectors_total']} sectors returned "
+                "any data at all — this usually means NSE is blocking/rejecting the request "
+                "before we even get to individual stocks (401/403, a login/CAPTCHA wall, or "
+                "the runner's IP being blocked outright), rather than a field-level schema "
+                "change. See sector_errors below for the raw exception per sector."
+            )
+        elif stats["drift_errors"] > 0:
+            likely_cause = (
                 "NSE response schema appears to have changed (field names/structure "
                 "differ from what the parser expects)."
-                if stats["drift_errors"] > 0
-                else "Success rate dropped well below normal — could be schema drift, "
-                     "a session/cookie change, or NSE rate-limiting the runner."
-            ),
+            )
+        else:
+            likely_cause = (
+                "Stock-level success rate dropped well below normal — could be schema "
+                "drift, a session/cookie change, or NSE rate-limiting the runner."
+            )
+
+        summary = {
+            "flagged_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+            "sectors_total": stats["sectors_total"],
+            "sectors_with_data": stats["sectors_with_data"],
+            "sector_errors": stats["sector_errors"][:5],
+            "stocks_attempted": stats["attempted"],
+            "stocks_succeeded": stats["succeeded"],
+            "stock_success_rate_pct": round(success_rate * 100, 1),
+            "drift_errors": stats["drift_errors"],
+            "drift_samples": stats["drift_samples"][:5],
+            "likely_cause": likely_cause,
         }
         flag_path.parent.mkdir(parents=True, exist_ok=True)
         with open(flag_path, "w") as f:

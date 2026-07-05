@@ -20,6 +20,7 @@ import datetime as dt
 from pathlib import Path
 
 import requests
+from playwright.sync_api import sync_playwright
 
 DIAGNOSTICS_DIR = Path(__file__).resolve().parent.parent / "diagnostics"
 
@@ -42,6 +43,33 @@ BASE_HEADERS = {
 NSE_HOME = "https://www.nseindia.com"
 
 
+def fetch_browser_cookies():
+    """
+    NSE sits behind Akamai bot-protection: the verification cookies it
+    needs (_abck, bm_sz, ak_bmsc, etc.) are set by JavaScript that runs
+    in a real browser, not by a plain HTTP GET. A `requests` session can
+    never earn these on its own — that's why every API call was coming
+    back as a fake "Resource not found" 404 (Akamai's soft-block page).
+
+    This launches headless Chromium once, lets the page's JS run and
+    collect those cookies naturally, then hands them off to a normal
+    `requests.Session` for the actual (fast) data pulls.
+    """
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(user_agent=BASE_HEADERS["User-Agent"])
+        page = context.new_page()
+        page.goto(NSE_HOME, wait_until="networkidle", timeout=45000)
+        page.wait_for_timeout(3000)
+        # Visit a data-heavy page too — some cookies are only set once the
+        # equity/market-data scripts on that page run.
+        page.goto(f"{NSE_HOME}/market-data/live-equity-market", wait_until="networkidle", timeout=45000)
+        page.wait_for_timeout(2500)
+        cookies = context.cookies()
+        browser.close()
+        return cookies
+
+
 class NSEClient:
     def __init__(self, warm_delay=2.5):
         self.session = requests.Session()
@@ -50,19 +78,21 @@ class NSEClient:
         self._warm_session()
 
     def _warm_session(self):
-        """Visit homepage + a couple of market-data pages to collect the
-        full cookie set NSE's frontend normally has before it calls its
-        own APIs. A partial cookie set is a common cause of 401/403/404
-        rejections from their WAF."""
+        """Get a fresh browser-verified cookie jar and load it into the
+        requests session. This is the expensive step (launches Chromium,
+        ~5-10s) but only runs at startup and again if we start getting
+        blocked mid-run (cookies can expire during a long run)."""
         try:
-            self.session.get(NSE_HOME, timeout=10)
-            time.sleep(self.warm_delay)
-            self.session.get(f"{NSE_HOME}/market-data/live-equity-market", timeout=10)
-            time.sleep(self.warm_delay)
-            self.session.get(f"{NSE_HOME}/get-quotes/equity?symbol=RELIANCE", timeout=10)
-            time.sleep(self.warm_delay)
-        except requests.RequestException:
-            pass
+            cookies = fetch_browser_cookies()
+            self.session.cookies.clear()
+            for c in cookies:
+                self.session.cookies.set(
+                    c["name"], c["value"],
+                    domain=c.get("domain", "").lstrip("."),
+                    path=c.get("path", "/"),
+                )
+        except Exception as e:  # noqa: BLE001
+            print(f"  ! browser cookie warm-up failed: {e}")
 
     def get_json(self, url, params=None, retries=3, backoff=3):
         last_err = None

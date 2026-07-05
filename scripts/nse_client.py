@@ -30,45 +30,76 @@ BASE_HEADERS = {
     ),
     "Accept-Language": "en-US,en;q=0.9",
     "Accept": "application/json, text/plain, */*",
+    "Accept-Encoding": "gzip, deflate, br",
     "Referer": "https://www.nseindia.com/",
     "Connection": "keep-alive",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "X-Requested-With": "XMLHttpRequest",
 }
 
 NSE_HOME = "https://www.nseindia.com"
 
 
 class NSEClient:
-    def __init__(self, warm_delay=1.5):
+    def __init__(self, warm_delay=2.5):
         self.session = requests.Session()
         self.session.headers.update(BASE_HEADERS)
         self.warm_delay = warm_delay
         self._warm_session()
 
     def _warm_session(self):
-        """Visit homepage (and one market-data page) to collect cookies."""
+        """Visit homepage + a couple of market-data pages to collect the
+        full cookie set NSE's frontend normally has before it calls its
+        own APIs. A partial cookie set is a common cause of 401/403/404
+        rejections from their WAF."""
         try:
             self.session.get(NSE_HOME, timeout=10)
             time.sleep(self.warm_delay)
-            self.session.get(
-                f"{NSE_HOME}/market-data/live-equity-market", timeout=10
-            )
+            self.session.get(f"{NSE_HOME}/market-data/live-equity-market", timeout=10)
+            time.sleep(self.warm_delay)
+            self.session.get(f"{NSE_HOME}/get-quotes/equity?symbol=RELIANCE", timeout=10)
             time.sleep(self.warm_delay)
         except requests.RequestException:
             pass
 
     def get_json(self, url, params=None, retries=3, backoff=3):
         last_err = None
+        last_body_snippet = None
         for attempt in range(retries):
             try:
                 resp = self.session.get(url, params=params, timeout=15)
                 if resp.status_code == 200:
-                    return resp.json()
-                if resp.status_code in (401, 403, 429):
+                    try:
+                        return resp.json()
+                    except ValueError:
+                        # Got a 200 but not JSON (e.g. an HTML page) — treat as a block.
+                        last_body_snippet = resp.text[:500]
+                        last_err = "HTTP 200 but non-JSON body (likely a block/challenge page)"
+                        self._warm_session()
+                        time.sleep(backoff * (attempt + 1))
+                        continue
+                # NSE's WAF frequently returns 401/403/404/429 for requests it
+                # flags as bot traffic (e.g. datacenter/cloud IPs), not just
+                # genuine "not found" — re-warm the session and retry either way.
+                if resp.status_code in (401, 403, 404, 429):
                     self._warm_session()
+                last_body_snippet = resp.text[:500]
                 last_err = f"HTTP {resp.status_code} for {url}"
             except Exception as e:  # noqa: BLE001
                 last_err = str(e)
             time.sleep(backoff * (attempt + 1))
+
+        # Save whatever the server actually sent back, so we can tell a
+        # genuine schema/URL problem apart from a WAF block page.
+        if last_body_snippet:
+            self.save_diagnostic(
+                f"http_error_{url.rsplit('/', 1)[-1]}",
+                last_body_snippet,
+                expected_keys=["<200 JSON response>"],
+                note=last_err,
+            )
         raise RuntimeError(f"Failed to fetch {url}: {last_err}")
 
     def save_diagnostic(self, label: str, raw_data, expected_keys, note=""):

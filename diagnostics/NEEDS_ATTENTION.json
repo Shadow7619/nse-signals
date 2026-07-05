@@ -1,0 +1,18 @@
+{
+  "flagged_at": "2026-07-05T17:27:27.669146+00:00",
+  "sectors_total": 14,
+  "sectors_with_data": 0,
+  "sector_errors": [
+    "NIFTY BANK: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
+    "NIFTY AUTO: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
+    "NIFTY IT: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
+    "NIFTY PHARMA: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
+    "NIFTY FMCG: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices"
+  ],
+  "stocks_attempted": 0,
+  "stocks_succeeded": 0,
+  "stock_success_rate_pct": 0,
+  "drift_errors": 0,
+  "drift_samples": [],
+  "likely_cause": "Only 0/14 sectors returned any data at all \u2014 this usually means NSE is blocking/rejecting the request before we even get to individual stocks (401/403, a login/CAPTCHA wall, or the runner's IP being blocked outright), rather than a field-level schema change. See sector_errors below for the raw exception per sector."
+}

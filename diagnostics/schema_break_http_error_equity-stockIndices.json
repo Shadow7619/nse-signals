@@ -1,0 +1,9 @@
+{
+  "label": "http_error_equity-stockIndices",
+  "captured_at": "2026-07-05T17:27:27.667544+00:00",
+  "expected_keys": [
+    "<200 JSON response>"
+  ],
+  "note": "HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
+  "raw_sample": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Resource not found</title>\n</head>\n<body style=\"background-color: #e8e8e8;\">\n  <div style=\"font-size: 32px; padding: 50px 25px; text-align: center;\">\n    Resource not found\n  </div>\n</body>\n</html>\n"
+}

@@ -1,0 +1,82 @@
+name: Update NSE Signals
+
+on:
+  schedule:
+    # 10:30 UTC = 4:00 PM IST, Mon-Fri (after market close, delivery data settles)
+    - cron: "30 10 * * 1-5"
+  workflow_dispatch: {}  # allows manual "Run workflow" button
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  update-signals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate signals
+        working-directory: scripts
+        run: python generate_signals.py
+
+      - name: Check for schema drift flag
+        id: healthcheck
+        run: |
+          if [ -f "diagnostics/NEEDS_ATTENTION.json" ]; then
+            echo "flagged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flagged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Optional Claude-assisted diagnosis
+        if: steps.healthcheck.outputs.flagged == 'true'
+        working-directory: scripts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python self_heal_diagnose.py
+
+      - name: Open or update GitHub Issue on schema drift
+        if: steps.healthcheck.outputs.flagged == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="NSE schema drift detected — signals may be stale"
+          BODY_FILE=$(mktemp)
+
+          echo "Automated health check flagged this run. Summary:" >> "$BODY_FILE"
+          echo '```json' >> "$BODY_FILE"
+          cat diagnostics/NEEDS_ATTENTION.json >> "$BODY_FILE"
+          echo '```' >> "$BODY_FILE"
+
+          if [ -f "diagnostics/suggested_fix.md" ]; then
+            echo "" >> "$BODY_FILE"
+            echo "## Claude's suggested diagnosis" >> "$BODY_FILE"
+            cat diagnostics/suggested_fix.md >> "$BODY_FILE"
+          else
+            echo "" >> "$BODY_FILE"
+            echo "_Add an \`ANTHROPIC_API_KEY\` repo secret to get an automatic suggested fix here next time._" >> "$BODY_FILE"
+          fi
+
+          EXISTING=$(gh issue list --state open --search "in:title \"$TITLE\"" --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file "$BODY_FILE"
+          else
+            gh issue create --title "$TITLE" --body-file "$BODY_FILE" --label "bug" || \
+            gh issue create --title "$TITLE" --body-file "$BODY_FILE"
+          fi
+
+      - name: Commit updated signals + diagnostics
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/signals.json diagnostics/
+          git diff --staged --quiet || git commit -m "Update NSE signals $(date -u +%Y-%m-%d)"
+          git push

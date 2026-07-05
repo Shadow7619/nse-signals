@@ -56,7 +56,12 @@ def fetch_browser_cookies():
     `requests.Session` for the actual (fast) data pulls.
     """
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(
+            headless=True,
+            args=["--disable-http2"],  # GitHub Actions' network stack has
+            # known issues negotiating HTTP/2 with some sites — force
+            # HTTP/1.1 to avoid ERR_HTTP2_PROTOCOL_ERROR.
+        )
         context = browser.new_context(user_agent=BASE_HEADERS["User-Agent"])
         page = context.new_page()
         page.goto(NSE_HOME, wait_until="networkidle", timeout=45000)

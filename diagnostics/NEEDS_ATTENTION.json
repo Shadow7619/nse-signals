@@ -1,13 +1,13 @@
 {
-  "flagged_at": "2026-07-17T12:28:14.813448+00:00",
+  "flagged_at": "2026-07-20T12:46:33.375151+00:00",
   "sectors_total": 14,
   "sectors_with_data": 0,
   "sector_errors": [
-    "NIFTY BANK: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
-    "NIFTY AUTO: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
-    "NIFTY IT: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
-    "NIFTY PHARMA: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
-    "NIFTY FMCG: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices"
+    "NIFTY BANK: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTPSConnectionPool(host='www.nseindia.com', port=443): Read timed out. (read timeout=15)",
+    "NIFTY AUTO: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTPSConnectionPool(host='www.nseindia.com', port=443): Read timed out. (read timeout=15)",
+    "NIFTY IT: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTPSConnectionPool(host='www.nseindia.com', port=443): Read timed out. (read timeout=15)",
+    "NIFTY PHARMA: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTPSConnectionPool(host='www.nseindia.com', port=443): Read timed out. (read timeout=15)",
+    "NIFTY FMCG: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTPSConnectionPool(host='www.nseindia.com', port=443): Read timed out. (read timeout=15)"
   ],
   "stocks_attempted": 0,
   "stocks_succeeded": 0,

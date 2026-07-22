@@ -1,6 +1,6 @@
 {
   "label": "http_error_equity-stockIndices",
-  "captured_at": "2026-07-21T12:45:47.790138+00:00",
+  "captured_at": "2026-07-22T12:48:41.897419+00:00",
   "expected_keys": [
     "<200 JSON response>"
   ],

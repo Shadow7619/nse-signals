@@ -1,9 +1,9 @@
 {
   "label": "http_error_equity-stockIndices",
-  "captured_at": "2026-10-16T15:23:22.464370+00:00",
+  "captured_at": "2026-10-19T17:41:23.983599+00:00",
   "expected_keys": [
     "<200 JSON response>"
   ],
-  "note": "HTTPSConnectionPool(host='www.nseindia.com', port=443): Read timed out. (read timeout=15)",
+  "note": "HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
   "raw_sample": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Resource not found</title>\n</head>\n<body style=\"background-color: #e8e8e8;\">\n  <div style=\"font-size: 32px; padding: 50px 25px; text-align: center;\">\n    Resource not found\n  </div>\n</body>\n</html>\n"
 }

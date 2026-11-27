@@ -1,10 +1,10 @@
 {
-  "flagged_at": "2026-11-26T20:21:21.821632+00:00",
+  "flagged_at": "2026-11-27T20:10:45.078587+00:00",
   "sectors_total": 14,
   "sectors_with_data": 0,
   "sector_errors": [
-    "NIFTY BANK: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
-    "NIFTY AUTO: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
+    "NIFTY BANK: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 200 but non-JSON body (likely a block/challenge page)",
+    "NIFTY AUTO: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 200 but non-JSON body (likely a block/challenge page)",
     "NIFTY IT: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
     "NIFTY PHARMA: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
     "NIFTY FMCG: Failed to fetch https://www.nseindia.com/api/equity-stockIndices: HTTP 404 for https://www.nseindia.com/api/equity-stockIndices"

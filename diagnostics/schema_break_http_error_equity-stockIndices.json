@@ -1,9 +1,9 @@
 {
   "label": "http_error_equity-stockIndices",
-  "captured_at": "2026-11-26T20:21:21.820812+00:00",
+  "captured_at": "2026-11-27T20:10:45.077803+00:00",
   "expected_keys": [
     "<200 JSON response>"
   ],
   "note": "HTTP 404 for https://www.nseindia.com/api/equity-stockIndices",
-  "raw_sample": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Resource not found</title>\n</head>\n<body style=\"background-color: #e8e8e8;\">\n  <div style=\"font-size: 32px; padding: 50px 25px; text-align: center;\">\n    Resource not found\n  </div>\n</body>\n</html>\n"
+  "raw_sample": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\" />\n<title>\n    NSE - Page Not Found\n</title>\n<meta name=\"description\" content=\"\" />\n<meta name=\"keywords\" content=\"NSE - Page Not Found\" />\n<meta name=\"robots\" content=\"index,follow\" />\n<link rel=\"shortcut icon\" href=\"/ass"
 }
